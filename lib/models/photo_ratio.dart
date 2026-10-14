@@ -9,4 +9,7 @@ enum PhotoRatio {
 
   /// 세로 화면에서 너비 ÷ 높이.
   final double aspect;
+
+  /// 비율 버튼을 누르면 바뀌는 다음 비율.
+  PhotoRatio get next => this == r4x3 ? r16x9 : r4x3;
 }

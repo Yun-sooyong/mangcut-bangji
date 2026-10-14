@@ -152,6 +152,18 @@ Rect centerCrop(Size source, double aspect) {
   return Rect.fromLTWH((source.width - w) / 2, (source.height - h) / 2, w, h);
 }
 
+/// 잘린 미리보기 안의 점 [p](0–1)을 카메라 영상 전체의 점(0–1)으로 바꾼다.
+///
+/// [viewAspect]는 잘린 미리보기의 비율, [sourceAspect]는 영상의 비율이다.
+/// 둘 다 세로 화면의 너비 ÷ 높이이다. 미리보기는 [centerCrop]으로 자른다.
+Offset viewToSource(Offset p, double viewAspect, double sourceAspect) {
+  final crop = centerCrop(Size(sourceAspect, 1), viewAspect);
+  return Offset(
+    (crop.left + p.dx * crop.width) / sourceAspect,
+    crop.top + p.dy * crop.height,
+  );
+}
+
 /// 기준 이미지에 필터를 적용한 새 이미지를 만든다.
 Future<ui.Image> renderFiltered(
   ui.Image source,

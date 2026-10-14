@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:camera/camera.dart';
@@ -10,7 +12,10 @@ import '../models/photo_ratio.dart';
 import '../models/scene.dart';
 import '../painting/filter_renderer.dart';
 import '../painting/guide_painter.dart';
+import '../widgets/control_bar.dart';
+import '../widgets/exposure_control.dart';
 import '../widgets/guide_picker.dart';
+import '../widgets/lens_bar.dart';
 import '../widgets/scene_tabs.dart';
 import 'result_screen.dart';
 
@@ -38,6 +43,26 @@ class _CameraScreenState extends State<CameraScreen>
   Guide? _guide = scenes.first.guides.first;
   bool _flipped = false;
 
+  /// 장면 탭과 가이드 목록을 펼쳤는지. 처음에는 펼친다.
+  bool _panelOpen = true;
+
+  /// 디지털 줌. 렌즈마다 따로이고 카메라를 다시 열면 최소 값으로 돌아간다.
+  double _zoom = 1;
+  double _minZoom = 1;
+  double _maxZoom = 1;
+  double _zoomAtScaleStart = 1;
+  final _zoomSender = _LatestOnly();
+
+  /// 노출 보정(EV). 카메라를 다시 열면 0으로 돌아간다.
+  double _exposure = 0;
+  double _minExposure = 0;
+  double _maxExposure = 0;
+  final _exposureSender = _LatestOnly();
+
+  /// 초점 사각형과 노출 슬라이더의 위치(미리보기 안의 픽셀). null이면 숨긴다.
+  Offset? _focusPoint;
+  Timer? _focusTimer;
+
   @override
   void initState() {
     super.initState();
@@ -48,6 +73,7 @@ class _CameraScreenState extends State<CameraScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _focusTimer?.cancel();
     _controller?.dispose();
     super.dispose();
   }
@@ -79,10 +105,7 @@ class _CameraScreenState extends State<CameraScreen>
       if (mounted) setState(() => _error = '이 기기에서 카메라를 찾지 못했습니다.');
       return;
     }
-    final back = _cameras.where(
-      (c) => c.lensDirection == CameraLensDirection.back,
-    );
-    await _open(back.isNotEmpty ? back.first : _cameras.first);
+    await _open(_mainBackCamera() ?? _cameras.first);
   }
 
   Future<void> _open(CameraDescription camera) async {
@@ -92,16 +115,29 @@ class _CameraScreenState extends State<CameraScreen>
       ResolutionPreset.max,
       enableAudio: false,
     );
+    _focusTimer?.cancel();
     setState(() {
       _camera = camera;
       _controller = null;
       _error = null;
+      _focusPoint = null;
     });
     _opening = true;
     try {
       await old?.dispose();
       await controller.initialize();
       await controller.lockCaptureOrientation(DeviceOrientation.portraitUp);
+      _minZoom = await controller.getMinZoomLevel();
+      // 10배보다 큰 디지털 줌은 화질이 너무 낮다.
+      _maxZoom = math.max(
+        _minZoom,
+        math.min(await controller.getMaxZoomLevel(), 10),
+      );
+      _zoom = _minZoom;
+      // 기기의 범위가 넓어도 ±2 EV만 쓴다.
+      _minExposure = math.max(await controller.getMinExposureOffset(), -2);
+      _maxExposure = math.min(await controller.getMaxExposureOffset(), 2);
+      _exposure = 0;
     } on CameraException catch (e) {
       await controller.dispose();
       _showError(e);
@@ -132,8 +168,10 @@ class _CameraScreenState extends State<CameraScreen>
     final wanted = current.lensDirection == CameraLensDirection.back
         ? CameraLensDirection.front
         : CameraLensDirection.back;
-    final next = _cameras.where((c) => c.lensDirection == wanted);
-    if (next.isNotEmpty) _open(next.first);
+    final next = wanted == CameraLensDirection.back
+        ? _mainBackCamera()
+        : _cameras.where((c) => c.lensDirection == wanted).firstOrNull;
+    if (next != null) _open(next);
   }
 
   Future<void> _capture() async {
@@ -170,6 +208,95 @@ class _CameraScreenState extends State<CameraScreen>
     }
   }
 
+  /// 후면의 기본 카메라. 광각 렌즈가 있으면 광각이다.
+  CameraDescription? _mainBackCamera() {
+    final back = _cameras.where(
+      (c) => c.lensDirection == CameraLensDirection.back,
+    );
+    return back.where((c) => c.lensType == CameraLensType.wide).firstOrNull ??
+        back.firstOrNull;
+  }
+
+  /// 지금 방향(전면 또는 후면)의 렌즈 종류. 렌즈 버튼의 순서로 정렬한다.
+  List<CameraLensType> _lensTypes() {
+    final direction = _camera?.lensDirection;
+    final types = {
+      for (final c in _cameras)
+        if (c.lensDirection == direction) _lensTypeOf(c),
+    };
+    return [
+      for (final t in lensOrder)
+        if (types.contains(t)) t,
+    ];
+  }
+
+  /// 종류를 모르는 렌즈는 광각으로 본다.
+  static CameraLensType _lensTypeOf(CameraDescription c) =>
+      lensOrder.contains(c.lensType) ? c.lensType : CameraLensType.wide;
+
+  void _selectLens(CameraLensType lens) {
+    final camera = _camera;
+    if (camera == null || _busy || _opening) return;
+    if (_lensTypeOf(camera) == lens) {
+      _setZoom(_minZoom);
+      return;
+    }
+    final next = _cameras.where(
+      (c) => c.lensDirection == camera.lensDirection && _lensTypeOf(c) == lens,
+    );
+    if (next.isNotEmpty) _open(next.first);
+  }
+
+  /// 줌을 바꾼다. 핀치 중에는 호출이 많으므로 마지막 값만 카메라에 보낸다.
+  void _setZoom(double value) {
+    final zoom = value.clamp(_minZoom, _maxZoom);
+    if (zoom == _zoom) return;
+    setState(() => _zoom = zoom);
+    _zoomSender.send(zoom, (v) async => _controller?.setZoomLevel(v));
+  }
+
+  /// 누른 곳에 초점과 노출을 맞추고 노출 슬라이더를 보여 준다.
+  Future<void> _focusAt(Offset local, Size viewSize) async {
+    final controller = _controller;
+    final previewSize = controller?.value.previewSize;
+    if (controller == null || previewSize == null) return;
+    // previewSize는 가로 기준이다. 세로 화면의 비율로 바꾼다.
+    final point = viewToSource(
+      Offset(local.dx / viewSize.width, local.dy / viewSize.height),
+      viewSize.width / viewSize.height,
+      previewSize.height / previewSize.width,
+    );
+    setState(() => _focusPoint = local);
+    _restartFocusTimer();
+    try {
+      if (controller.value.focusPointSupported) {
+        await controller.setFocusPoint(point);
+      }
+      if (controller.value.exposurePointSupported) {
+        await controller.setExposurePoint(point);
+      }
+    } on CameraException {
+      // 이 렌즈가 초점이나 노출의 위치 지정을 지원하지 않는다. 슬라이더는 쓸 수 있다.
+    }
+  }
+
+  void _setExposure(double value) {
+    setState(() => _exposure = value);
+    _restartFocusTimer();
+    _exposureSender.send(value, (v) async => _controller?.setExposureOffset(v));
+  }
+
+  /// 3초 동안 조작하지 않으면 초점 사각형과 슬라이더를 숨긴다.
+  void _restartFocusTimer() {
+    _focusTimer?.cancel();
+    _focusTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _focusPoint = null);
+    });
+  }
+
+  bool _hasLens(CameraLensDirection direction) =>
+      _cameras.any((c) => c.lensDirection == direction);
+
   void _selectScene(Scene scene) {
     setState(() {
       _scene = scene;
@@ -196,33 +323,79 @@ class _CameraScreenState extends State<CameraScreen>
             ),
             Align(
               alignment: Alignment.bottomCenter,
-              child: ColoredBox(
-                color: Colors.black54,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SceneTabs(
-                      scenes: scenes,
-                      selected: _scene,
-                      onSelected: _selectScene,
-                    ),
-                    GuidePicker(
-                      guides: _scene.guides,
-                      selected: _guide,
-                      onSelected: (g) => setState(() {
-                        _guide = g;
-                        _flipped = false;
-                      }),
-                    ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_controller != null && _camera != null)
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      child: _ShutterButton(
-                        enabled: _controller != null && !_busy,
-                        onPressed: _capture,
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          LensBar(
+                            lenses: _lensTypes(),
+                            current: _lensTypeOf(_camera!),
+                            zoom: _zoom,
+                            onSelected: _selectLens,
+                          ),
+                          if (_exposure != 0) ...[
+                            const SizedBox(width: 8),
+                            ExposureBadge(
+                              value: _exposure,
+                              onReset: () => _setExposure(0),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ColoredBox(
+                    color: Colors.black54,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 200),
+                          curve: Curves.easeOut,
+                          child: _panelOpen
+                              ? Column(
+                                  children: [
+                                    SceneTabs(
+                                      scenes: scenes,
+                                      selected: _scene,
+                                      onSelected: _selectScene,
+                                    ),
+                                    GuidePicker(
+                                      guides: _scene.guides,
+                                      selected: _guide,
+                                      onSelected: (g) => setState(() {
+                                        _guide = g;
+                                        _flipped = false;
+                                      }),
+                                    ),
+                                  ],
+                                )
+                              : const SizedBox(width: double.infinity),
+                        ),
+                        ControlBar(
+                          ratio: _ratio,
+                          guide: _guide,
+                          panelOpen: _panelOpen,
+                          canFlip: _guide?.flippable ?? false,
+                          canSwitch:
+                              _hasLens(CameraLensDirection.front) &&
+                              _hasLens(CameraLensDirection.back),
+                          shutterEnabled: _controller != null && !_busy,
+                          onRatio: () => setState(() => _ratio = _ratio.next),
+                          onGuide: () =>
+                              setState(() => _panelOpen = !_panelOpen),
+                          onShutter: _capture,
+                          onFlip: () => setState(() => _flipped = !_flipped),
+                          onSwitch: _switchCamera,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -233,43 +406,41 @@ class _CameraScreenState extends State<CameraScreen>
 
   Widget _buildViewfinder() {
     final guide = _guide;
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        _buildPreview(),
-        if (guide != null && _error == null)
-          IgnorePointer(
-            child: CustomPaint(painter: GuidePainter(guide, flipped: _flipped)),
-          ),
-        Positioned(
-          top: 8,
-          left: 8,
-          child: _RatioButton(
-            ratio: _ratio,
-            onChanged: (r) => setState(() => _ratio = r),
-          ),
-        ),
-        Positioned(
-          top: 8,
-          right: 8,
-          child: Column(
-            children: [
-              if (_cameras.length > 1)
-                _OverlayButton(
-                  icon: Icons.cameraswitch_outlined,
-                  tooltip: '카메라 전환',
-                  onPressed: _switchCamera,
-                ),
-              if (guide != null && guide.flippable)
-                _OverlayButton(
-                  icon: Icons.flip,
-                  tooltip: '가이드 좌우 반전',
-                  onPressed: () => setState(() => _flipped = !_flipped),
-                ),
-            ],
-          ),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) =>
+          _buildViewfinderBody(guide, constraints.biggest),
+    );
+  }
+
+  Widget _buildViewfinderBody(Guide? guide, Size size) {
+    final focusPoint = _focusPoint;
+    return GestureDetector(
+      onTapUp: (d) => _focusAt(d.localPosition, size),
+      onScaleStart: (_) => _zoomAtScaleStart = _zoom,
+      onScaleUpdate: (d) {
+        if (d.pointerCount >= 2) _setZoom(_zoomAtScaleStart * d.scale);
+      },
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          _buildPreview(),
+          if (guide != null && _error == null)
+            IgnorePointer(
+              child: CustomPaint(
+                painter: GuidePainter(guide, flipped: _flipped),
+              ),
+            ),
+          if (focusPoint != null && _controller != null)
+            ExposureControl(
+              point: focusPoint,
+              viewSize: size,
+              value: _exposure,
+              min: _minExposure,
+              max: _maxExposure,
+              onChanged: _setExposure,
+            ),
+        ],
+      ),
     );
   }
 
@@ -313,100 +484,29 @@ class _CameraScreenState extends State<CameraScreen>
   }
 }
 
-class _RatioButton extends StatelessWidget {
-  const _RatioButton({required this.ratio, required this.onChanged});
+/// 마지막 값만 카메라에 보낸다. 핀치와 슬라이더는 호출이 많다.
+/// 앞의 호출이 끝나기 전에 들어온 값은 마지막 값만 남긴다.
+class _LatestOnly {
+  double? _pending;
+  bool _busy = false;
 
-  final PhotoRatio ratio;
-  final ValueChanged<PhotoRatio> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return SegmentedButton<PhotoRatio>(
-      showSelectedIcon: false,
-      style: ButtonStyle(
-        visualDensity: VisualDensity.compact,
-        backgroundColor: WidgetStateProperty.resolveWith(
-          (states) => states.contains(WidgetState.selected)
-              ? Colors.amber
-              : Colors.black45,
-        ),
-        foregroundColor: WidgetStateProperty.resolveWith(
-          (states) => states.contains(WidgetState.selected)
-              ? Colors.black
-              : Colors.white,
-        ),
-      ),
-      segments: [
-        for (final r in PhotoRatio.values)
-          ButtonSegment(value: r, label: Text(r.label)),
-      ],
-      selected: {ratio},
-      onSelectionChanged: (s) => onChanged(s.first),
-    );
-  }
-}
-
-class _OverlayButton extends StatelessWidget {
-  const _OverlayButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onPressed,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: IconButton.filled(
-        onPressed: onPressed,
-        tooltip: tooltip,
-        icon: Icon(icon),
-        style: IconButton.styleFrom(
-          backgroundColor: Colors.black45,
-          foregroundColor: Colors.white,
-        ),
-      ),
-    );
-  }
-}
-
-class _ShutterButton extends StatelessWidget {
-  const _ShutterButton({required this.enabled, required this.onPressed});
-
-  final bool enabled;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      enabled: enabled,
-      label: '촬영',
-      child: GestureDetector(
-        onTap: enabled ? onPressed : null,
-        child: Opacity(
-          opacity: enabled ? 1 : 0.4,
-          child: Container(
-            width: 68,
-            height: 68,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 4),
-            ),
-            padding: const EdgeInsets.all(4),
-            child: const DecoratedBox(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+  Future<void> send(double value, Future<void> Function(double) apply) async {
+    _pending = value;
+    if (_busy) return;
+    _busy = true;
+    try {
+      while (_pending != null) {
+        final target = _pending!;
+        _pending = null;
+        try {
+          await apply(target);
+        } on CameraException {
+          // 카메라를 닫는 중이면 실패할 수 있다. 다음에 열 때 값을 다시 정한다.
+          _pending = null;
+        }
+      }
+    } finally {
+      _busy = false;
+    }
   }
 }
