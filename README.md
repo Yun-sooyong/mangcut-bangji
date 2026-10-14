@@ -322,3 +322,4 @@ CLAUDE.md                       Claude Code용 작업 규칙
 | [`research.md`](research.md) | 참고 영상, 구도 자료, 필름 레시피, 관련 앱의 조사 결과 |
 | [`plan.md`](plan.md) | 구현 계획, 트레이드오프, 진행 상황 |
 | [`CLAUDE.md`](CLAUDE.md) | Claude Code용 작업 규칙 |
+| [`HANDOFF.md`](HANDOFF.md) | 세션 인계 문서. 이전 대화의 결정, 작업 규칙, 다음 작업 |
