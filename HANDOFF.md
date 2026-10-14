@@ -83,8 +83,9 @@ xcrun devicectl device process launch --terminate-existing --device <UDID> com.m
 
 ### Git
 
-- 작업은 `step7-camera-controls` 브랜치에 있습니다. **push하지 않았습니다.** `main`에 합치지 않았습니다.
-- **주의**: Mac 세션의 저장소는 그 세션용 임시 폴더에 받았습니다. 세션을 지우면 폴더도 지워집니다. 다음 세션은 GitHub에서 받아야 합니다. 그 전에 이 브랜치를 push해야 합니다.
+- 단계 6과 촬영 화면 개선의 작업은 `main`에 합쳤습니다. GitHub에 push했습니다 (2026-10-15).
+- 작업 브랜치 `step7-camera-controls`도 GitHub에 남아 있습니다. 내용은 `main`과 같습니다.
+- Mac 세션의 저장소는 그 세션용 임시 폴더에 있었습니다. 다음 세션은 GitHub에서 받습니다.
 
 ## 5. 다음 작업
 
@@ -92,7 +93,6 @@ xcrun devicectl device process launch --terminate-existing --device <UDID> com.m
 
 1. 필터 값 조정 (`lib/data/filters.dart`). 사용자가 iPhone에서 보고 의견을 줍니다.
 2. 가이드 수정 (`lib/data/guides.dart`, `lib/data/scenes.dart`)
-3. `step7-camera-controls`를 `main`에 합치기
 
 어느 작업이든 먼저 `plan.md`에 계획을 쓰고 "승인"을 받습니다.
 
