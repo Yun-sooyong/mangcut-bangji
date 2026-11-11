@@ -239,6 +239,20 @@ flutter run
 - 필터: `lib/data/filters.dart`에 `PhotoFilter`를 추가합니다. 묶음(`FilterCategory.basic` 또는 `FilterCategory.vintage`)을 지정합니다.
 - 화면 코드는 고치지 않습니다.
 
+### 앱 아이콘을 바꾸는 방법
+
+아이콘의 그림은 코드(`tool/icon_painter.dart`)로 그립니다. 그림을 고친 다음 아래 명령을 실행합니다.
+
+```bash
+UPDATE_ICON=1 flutter test test/icon_test.dart
+dart run flutter_launcher_icons
+git checkout -- ios/Runner.xcodeproj/project.pbxproj
+```
+
+- 첫 명령은 `assets/icon/`의 PNG 2개를 다시 만듭니다.
+- 둘째 명령은 iOS와 Android의 크기별 아이콘을 만듭니다.
+- 셋째 명령은 패키지(0.14.4)가 Xcode 설정을 잘못 바꾸는 것을 되돌립니다.
+
 ## 프로젝트 구조
 
 ```

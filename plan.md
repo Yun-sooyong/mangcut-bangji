@@ -1,7 +1,7 @@
 # 망컷방지 — 구현 계획 (plan.md)
 
 - 작성일: 2026-10-14 (4차 개정), 2026-10-15 (9장 추가)
-- 상태: **단계 1–6 완료. 단계 7 일부 완료** (촬영 화면 개선, 9장). 필터와 가이드의 조정은 나중에 합니다.
+- 상태: **단계 1–6 완료. 단계 7 일부 완료** (촬영 화면 개선, 9장). 필터와 가이드의 조정은 나중에 합니다. 앱 아이콘 완료 (10장).
 - 근거 문서: `research.md`
 - 작성 규칙: `research.md`의 0장과 같습니다. 추정에는 **[추정]** 표시를 붙입니다.
 
@@ -31,6 +31,7 @@
 | 5 | 완료. Android 에뮬레이터(Pixel 9 Pro)에서 전체 흐름을 확인했습니다. |
 | 6 | 완료. iPhone 15 Pro(iOS 26.6.2)에서 확인했습니다. 아래 "단계 6의 결과"를 보십시오. |
 | 7 | 일부 완료. 촬영 화면 개선(9장)을 마쳤습니다. 필터 값과 가이드의 조정은 사용자가 나중에 하기로 했습니다. |
+| 아이콘 | 완료 (2026-11-11, 10장). Android 에뮬레이터에서 확인했습니다. iPhone은 Mac에서 다음 빌드 때 확인합니다. |
 
 ### 단계 6의 결과 (2026-10-15)
 
@@ -978,3 +979,106 @@ Offset viewToSource(Offset p, double viewAspect, double sourceAspect) {
 
 - 조리개: 원하신 것이 밝기 조절입니까, 배경 흐림입니까? 밝기 조절이면 9.4대로 진행합니다.
 - 패널: 장면이나 가이드를 골라도 접히지 않게 했습니다. 괜찮습니까?
+
+## 10. 앱 아이콘 (2026-11-11)
+
+### 10.1 사용자의 결정
+
+- 시안 8개(A–H) 중에서 **E(인화 사진)**를 골랐습니다.
+- E의 모양: 주황 바탕 위에 흰 테두리의 인화 사진이 있습니다. 사진은 왼쪽으로 6° 기울어져 있습니다. 사진 안에는 푸른 하늘, 어두운 바다(지평선), 앰버색 해가 있습니다. 해는 삼분할 교차점(오른쪽 위)에 있습니다. 옅은 삼분할 선이 있습니다.
+
+| 부분 | 색 |
+|---|---|
+| 바탕 | `#E9733A` |
+| 사진 테두리 | `#FBF6EC` |
+| 하늘 | `#2E4A5A` |
+| 바다 | `#1E3340` |
+| 해 | `#F2A531` |
+| 삼분할 선 | 흰색, 불투명도 35% |
+
+### 10.2 접근 방식
+
+1. 아이콘 원본(1024×1024 PNG)을 Flutter의 그리기 코드로 만듭니다.
+   - `tool/icon_painter.dart`에 그리기 함수를 둡니다.
+   - `test/icon_test.dart`가 그 함수로 PNG를 만듭니다. 기존 `render_test.dart`와 같은 방식입니다.
+   - 결과는 `assets/icon/icon.png`(iOS용, 바탕 포함)와 `assets/icon/icon_foreground.png`(Android adaptive icon의 전경, 투명 바탕)입니다.
+2. 개발용 패키지 `flutter_launcher_icons`로 크기별 아이콘을 만듭니다.
+3. 만든 PNG를 저장소에 커밋합니다. Mac에서는 이 PNG를 그대로 씁니다.
+
+그리기 코드의 뼈대는 다음과 같습니다.
+
+```dart
+// tool/icon_painter.dart
+void paintAppIcon(Canvas canvas, double size, {bool background = true}) {
+  final s = size / 1024;
+  canvas.scale(s);
+  if (background) {
+    canvas.drawRect(const Rect.fromLTWH(0, 0, 1024, 1024),
+        Paint()..color = const Color(0xFFE9733A));
+  }
+  canvas.save();
+  canvas.translate(512, 512);
+  canvas.rotate(-6 * math.pi / 180);
+  canvas.translate(-512, -512);
+  // 테두리, 하늘, 바다, 해, 삼분할 선
+  canvas.restore();
+}
+```
+
+`pubspec.yaml`에 추가하는 설정은 다음과 같습니다.
+
+```yaml
+dev_dependencies:
+  flutter_launcher_icons: ^0.14.0   # [추정] 실제 버전은 flutter pub add가 정합니다.
+
+flutter_launcher_icons:
+  image_path: assets/icon/icon.png
+  ios: true
+  remove_alpha_ios: true
+  android: true
+  adaptive_icon_background: "#E9733A"
+  adaptive_icon_foreground: assets/icon/icon_foreground.png
+```
+
+### 10.3 수정할 파일
+
+| 파일 | 내용 |
+|---|---|
+| `tool/icon_painter.dart` | 새 파일. 아이콘 그리기 |
+| `test/icon_test.dart` | 새 파일. PNG 2개를 만듭니다. 크기와 투명도를 확인합니다. |
+| `assets/icon/icon.png`, `icon_foreground.png` | 새 파일. 아이콘 원본 |
+| `pubspec.yaml` | 개발용 패키지와 아이콘 설정 |
+| `ios/Runner/Assets.xcassets/AppIcon.appiconset/*` | 패키지가 바꿉니다. |
+| `android/app/src/main/res/mipmap-*/*` | 패키지가 바꿉니다. |
+| `README.md`, `HANDOFF.md`, `plan.md` 0장 | 아이콘을 다시 만드는 방법을 적습니다. |
+
+### 10.4 트레이드오프
+
+| 선택 | 장점 | 단점 |
+|---|---|---|
+| 코드로 그리기 (선택) | 색과 모양을 숫자로 고칩니다. 도구를 설치하지 않습니다. | 정교한 그림은 어렵습니다. |
+| SVG를 PNG로 바꾸기 | 그림 도구로 고칠 수 있습니다. | 변환 도구(Inkscape 등)가 필요합니다. |
+| `flutter_launcher_icons` (선택) | iOS와 Android의 모든 크기를 한 번에 만듭니다. 개발용이라 앱 크기가 늘지 않습니다. | 패키지 하나가 늘어납니다. |
+| 크기별 PNG를 직접 만들기 | 패키지가 없습니다. | iOS만 해도 크기가 많습니다. 실수하기 쉽습니다. |
+
+- E는 세부 모양이 많습니다. 작은 크기(설정 화면 29pt 등)에서 삼분할 선은 거의 보이지 않습니다. [추정] 사진, 해, 지평선은 보입니다.
+- Android adaptive icon은 가장자리를 잘라 냅니다. 그래서 전경 그림을 가운데 66% 안에 넣습니다.
+- iOS는 모서리를 자동으로 둥글게 자릅니다. 그래서 원본에는 둥근 모서리를 넣지 않습니다.
+
+### 10.5 작업 순서와 확인 방법
+
+1. 그리기 코드와 테스트를 만듭니다. PNG를 눈으로 확인합니다.
+2. 패키지를 추가하고 `dart run flutter_launcher_icons`를 실행합니다.
+3. `flutter analyze`와 `flutter test`를 실행합니다.
+4. Android 에뮬레이터의 홈 화면에서 아이콘을 확인합니다.
+5. 커밋하고 push합니다.
+6. iPhone 확인은 Mac에서 다시 빌드할 때 합니다.
+
+### 10.6 승인과 결과
+
+- 승인: 2026-11-11
+- PNG 생성: PNG 파일은 `UPDATE_ICON` 환경 변수가 있을 때만 다시 만듭니다. 테스트를 돌릴 때마다 파일이 바뀌지 않게 하기 위해서입니다.
+- 패키지 버전: 0.14.4
+- 패키지 버그: 패키지가 `project.pbxproj`의 `ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS`를 `AppIcon`으로 바꿉니다. 이 변경은 되돌렸습니다. 아이콘 이름은 원래 `AppIcon`입니다.
+- Android 여백: 패키지는 adaptive icon의 전경에 16%의 여백을 넣습니다. 전경 그림에 이미 여백이 있으므로 `adaptive_icon_foreground_inset: 0`으로 바꿨습니다.
+- 결과: `flutter analyze` 문제 없음. 테스트 31개 통과. Android 에뮬레이터(Pixel 9 Pro)의 앱 목록에서 아이콘을 확인했습니다.
