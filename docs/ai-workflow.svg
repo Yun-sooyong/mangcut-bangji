@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 564" width="960" height="564" role="img" aria-labelledby="t d">
+<title id="t">망컷방지 — AI 작업 흐름</title>
+<desc id="d">요구 사항 정리에서 계획 승인, 구현, 검사, 실기기 확인까지 8단계와, 불편한 점을 계획에 반영해 다시 승인받는 되돌림 고리를 보여 주는 작업 흐름도.</desc>
+<style>
+svg { --bg:#F3F4EE; --ink:#1F3326; --acc:#5E7A4A; --fill:#C8D8A4; --line:#D5DACB; --panel:#FBFBF7; --mute:#4A5D4F; font-family:-apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif; }
+@media (prefers-color-scheme: dark) { svg { --bg:#131712; --ink:#E5EADC; --acc:#9DB57F; --fill:#3D5230; --line:#2E372C; --panel:#1B2219; --mute:#B4BFA9; } }
+.bg { fill:var(--bg); }
+text { fill:var(--ink); font-size:14px; }
+.ttl { font-size:20px; font-weight:800; }
+.lg { font-size:12px; fill:var(--mute); }
+.box { stroke-linejoin:round; }
+.me { fill:var(--fill); stroke:var(--ink); stroke-width:2.5; }
+.ai { fill:var(--panel); stroke:var(--line); stroke-width:1.5; }
+.check { fill:var(--panel); stroke:var(--acc); stroke-width:1.5; stroke-dasharray:5 4; }
+.side { fill:none; stroke:var(--line); stroke-width:1.5; }
+.bar { fill:var(--acc); }
+.pill-me { fill:var(--ink); }
+.pill-ai { fill:var(--acc); }
+.pill-check { fill:var(--bg); stroke:var(--acc); stroke-width:1.2; stroke-dasharray:3 2; }
+.pill-side { fill:var(--line); }
+.pt { font-size:11.5px; font-weight:700; }
+.pt-me { fill:var(--bg); }
+.pt-ai { fill:var(--bg); }
+.pt-check { fill:var(--ink); }
+.pt-side { fill:var(--ink); }
+.body { fill:var(--ink); }
+.flow { fill:none; stroke:var(--acc); stroke-width:2; stroke-dasharray:6 6; animation:dash 1.2s linear infinite; }
+.loop { fill:none; stroke:var(--acc); stroke-width:2; stroke-dasharray:3 5; animation:dash 1.2s linear infinite; }
+.head { fill:var(--acc); }
+.lpill { fill:var(--bg); stroke:var(--acc); stroke-width:1.2; }
+.ltxt { font-size:12px; font-weight:700; }
+.hl { fill:none; stroke:var(--acc); stroke-opacity:0.55; stroke-width:6; opacity:0; animation:glow 14.0s ease-in-out infinite; }
+.h1 { animation-delay:0.00s; }
+.h2 { animation-delay:1.75s; }
+.h3 { animation-delay:3.50s; }
+.h4 { animation-delay:5.25s; }
+.h5 { animation-delay:7.00s; }
+.h6 { animation-delay:8.75s; }
+.h7 { animation-delay:10.50s; }
+.h8 { animation-delay:12.25s; }
+@keyframes dash { to { stroke-dashoffset:-24; } }
+@keyframes glow { 0% { opacity:0; } 2% { opacity:1; } 11.50% { opacity:1; } 14.50% { opacity:0; } 100% { opacity:0; } }
+@media (prefers-reduced-motion: reduce) { .flow, .loop { animation:none; } .hl { animation:none; opacity:0; } }
+</style>
+<rect class="bg" x="0" y="0" width="960" height="564"/>
+<text class="ttl" x="24" y="40">망컷방지 — AI 작업 흐름</text>
+<rect class="box me" x="24" y="62" width="26" height="16" rx="4"/><text class="lg" x="58" y="74">나의 판단</text>
+<rect class="box ai" x="136" y="62" width="26" height="16" rx="4"/><text class="lg" x="170" y="74">AI</text>
+<rect class="box check" x="208" y="62" width="26" height="16" rx="4"/><text class="lg" x="242" y="74">검사·배포</text>
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path class="head" d="M0,1 L10,5 L0,9 Z"/></marker></defs>
+<path class="flow" d="M277,152.0 L309,152.0" marker-end="url(#ah)"/>
+<path class="flow" d="M567,152.0 L599,152.0" marker-end="url(#ah)"/>
+<path class="flow" d="M729.0,195 L729.0,235" marker-end="url(#ah)"/>
+<path class="flow" d="M601,280.0 L569,280.0" marker-end="url(#ah)"/>
+<path class="flow" d="M311,280.0 L279,280.0" marker-end="url(#ah)"/>
+<path class="flow" d="M149.0,323 L149.0,363" marker-end="url(#ah)"/>
+<path class="flow" d="M277,408.0 L309,408.0" marker-end="url(#ah)"/>
+<path class="loop" d="M567,408.0 C940,408.0 940,152.0 859,152.0" marker-end="url(#ah)"/>
+<rect class="lpill" x="640.0" y="427.0" width="177.9" height="22" rx="11"/><text class="ltxt" x="729.0" y="442.0" text-anchor="middle">계획 9장에 반영 → 다시 승인</text>
+<rect class="hl h1" x="19" y="107" width="260" height="90" rx="14"/>
+<rect class="hl h2" x="309" y="107" width="260" height="90" rx="14"/>
+<rect class="hl h3" x="599" y="107" width="260" height="90" rx="14"/>
+<rect class="hl h4" x="599" y="235" width="260" height="90" rx="14"/>
+<rect class="hl h5" x="309" y="235" width="260" height="90" rx="14"/>
+<rect class="hl h6" x="19" y="235" width="260" height="90" rx="14"/>
+<rect class="hl h7" x="19" y="363" width="260" height="90" rx="14"/>
+<rect class="hl h8" x="309" y="363" width="260" height="90" rx="14"/>
+<g><rect class="box me" x="24" y="112" width="250" height="80" rx="10"/>
+<rect class="pill-me" x="36" y="101" width="49.7" height="22" rx="11"/><text class="pt pt-me" x="60.9" y="116" text-anchor="middle">1 · 나</text>
+<text class="body" x="36" y="148">요구 사항과 참고 영상 정리 (만들</text>
+<text class="body" x="36" y="168">내용.txt)</text>
+</g>
+<g><rect class="box ai" x="314" y="112" width="250" height="80" rx="10"/>
+<rect class="pill-ai" x="326" y="101" width="78.0" height="22" rx="11"/><text class="pt pt-ai" x="365.0" y="116" text-anchor="middle">2 · Sonnet</text>
+<text class="body" x="326" y="148">자료 조사 → research.md</text>
+</g>
+<g><rect class="box ai" x="604" y="112" width="250" height="80" rx="10"/>
+<rect class="pill-ai" x="616" y="101" width="87.9" height="22" rx="11"/><text class="pt pt-ai" x="660.0" y="116" text-anchor="middle">3 · 메인 모델</text>
+<text class="body" x="616" y="148">구현 계획 plan.md (4차까지 수정)</text>
+</g>
+<g><rect class="box me" x="604" y="240" width="250" height="80" rx="10"/>
+<rect class="pill-me" x="616" y="229" width="49.7" height="22" rx="11"/><text class="pt pt-me" x="640.9" y="244" text-anchor="middle">4 · 나</text>
+<text class="body" x="616" y="276">계획 검토 후 "승인"</text>
+</g>
+<g><rect class="box ai" x="314" y="240" width="250" height="80" rx="10"/>
+<rect class="pill-ai" x="326" y="229" width="105.9" height="22" rx="11"/><text class="pt pt-ai" x="378.9" y="244" text-anchor="middle">5 · Claude Code</text>
+<text class="body" x="326" y="276">단계 1~5 구현</text>
+</g>
+<g><rect class="box check" x="24" y="240" width="250" height="80" rx="10"/>
+<rect class="pill-check" x="36" y="229" width="61.2" height="22" rx="11"/><text class="pt pt-check" x="66.6" y="244" text-anchor="middle">6 · 검사</text>
+<text class="body" x="36" y="276">flutter analyze · 테스트 31개 ·</text>
+<text class="body" x="36" y="296">Android 에뮬레이터</text>
+</g>
+<g><rect class="box me" x="24" y="368" width="250" height="80" rx="10"/>
+<rect class="pill-me" x="36" y="357" width="49.7" height="22" rx="11"/><text class="pt pt-me" x="60.9" y="372" text-anchor="middle">7 · 나</text>
+<text class="body" x="36" y="404">iPhone 15 Pro 실기기 확인 (8개</text>
+<text class="body" x="36" y="424">항목)</text>
+</g>
+<g><rect class="box me" x="314" y="368" width="250" height="80" rx="10"/>
+<rect class="pill-me" x="326" y="357" width="49.7" height="22" rx="11"/><text class="pt pt-me" x="350.9" y="372" text-anchor="middle">8 · 나</text>
+<text class="body" x="326" y="404">불편한 점 정리 (버튼 배치, 줌,</text>
+<text class="body" x="326" y="424">밝기)</text>
+</g>
+<g><rect class="box side" x="24" y="482" width="830" height="50" rx="10"/><rect class="bar" x="24" y="492" width="4" height="30" rx="2"/><rect class="pill-side" x="38" y="471" width="52.5" height="22" rx="11"/><text class="pt pt-side" x="64.2" y="486" text-anchor="middle">곁가지</text><text class="body" x="40" y="515">HANDOFF.md — Windows 세션과 Mac 세션의 결정과 작업 방식을 이어 줌</text></g>
+</svg>
