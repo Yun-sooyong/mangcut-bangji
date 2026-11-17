@@ -2,9 +2,9 @@
 
 구도 가이드와 빈티지 필터를 제공하는 카메라 앱. Flutter, 대상 플랫폼은 iOS (개발 중 확인은 Android).
 
-- 요구 사항: `read/만들 내용.txt`
-- 조사 결과: `research.md`
-- 구현 계획: `plan.md`
+- 요구 사항: `docs/read/만들 내용.txt`
+- 조사 결과: `docs/research.md`
+- 구현 계획: `docs/plan.md`
 - 세션 인계: `HANDOFF.md` — 새 세션은 이 문서를 먼저 읽는다.
 
 ## 작업 규칙

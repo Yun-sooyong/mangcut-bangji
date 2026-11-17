@@ -5,8 +5,8 @@
 사용자는 촬영 장면을 고릅니다. 앱은 그 장면에 맞는 구도 가이드를 카메라 화면 위에 표시합니다. 사용자는 가이드에 맞춰 사진을 찍습니다. 촬영 후에 사용자는 기본 필터 또는 빈티지 필터를 고릅니다.
 
 - 대상 플랫폼: iOS (개발 중에는 Android 에뮬레이터로도 확인합니다)
-- 프레임워크: Flutter 3.44.8, Dart 3.12.2
-- 상태: MVP 개발 중. iPhone 15 Pro에서 전체 흐름을 확인했습니다. 필터 값과 가이드는 아직 조정하지 않았습니다.
+- 프레임워크: Flutter 3.44.8(Windows 개발), 3.47.7(Mac에서 iOS 빌드), Dart 3.12.2
+- 상태: MVP 기능 구현 완료. iPhone 15 Pro에서 전체 흐름을 확인했습니다. 필터 값과 가이드는 아직 조정하지 않았습니다.
 
 ## 목차
 
@@ -284,9 +284,9 @@ lib/
     exposure_control.dart       초점 사각형, 밝기 슬라이더, 밝기 표시
     filtered_view.dart          화면에 필터 적용
 test/                           테스트
-read/만들 내용.txt               요구 사항
-research.md                     자료 조사 결과
-plan.md                         구현 계획과 진행 상황
+docs/read/만들 내용.txt          요구 사항
+docs/research.md                자료 조사 결과
+docs/plan.md                    구현 계획과 진행 상황
 CLAUDE.md                       Claude Code용 작업 규칙
 ```
 
@@ -331,7 +331,7 @@ CLAUDE.md                       Claude Code용 작업 규칙
 
 ## 알려진 제한과 확인하지 않은 항목
 
-- iPhone 15 Pro에서 확인했습니다. 결과는 `plan.md`의 0장에 있습니다. 다른 iPhone 기종에서는 확인하지 않았습니다.
+- iPhone 15 Pro에서 확인했습니다. 결과는 `docs/plan.md`의 0장에 있습니다. 다른 iPhone 기종에서는 확인하지 않았습니다.
 - 조리개는 조절할 수 없습니다. iPhone 카메라의 조리개는 고정입니다. 밝기는 노출 슬라이더로 바꿉니다.
 - 렌즈 사이의 전환은 iPhone 기본 카메라처럼 매끄럽지 않습니다. 핀치 줌으로는 렌즈가 바뀌지 않습니다.
 - 망원 렌즈의 배율은 기종마다 다릅니다. 그래서 렌즈 버튼에 "망원"이라고만 씁니다.
@@ -347,9 +347,9 @@ CLAUDE.md                       Claude Code용 작업 규칙
 
 | 문서 | 내용 |
 |---|---|
-| [`read/만들 내용.txt`](read/만들%20내용.txt) | 요구 사항 |
-| [`research.md`](research.md) | 참고 영상, 구도 자료, 필름 레시피, 관련 앱의 조사 결과 |
-| [`plan.md`](plan.md) | 구현 계획, 트레이드오프, 진행 상황 |
+| [`docs/read/만들 내용.txt`](docs/read/만들%20내용.txt) | 요구 사항 |
+| [`docs/research.md`](docs/research.md) | 참고 영상, 구도 자료, 필름 레시피, 관련 앱의 조사 결과 |
+| [`docs/plan.md`](docs/plan.md) | 구현 계획, 트레이드오프, 진행 상황 |
 | [`CLAUDE.md`](CLAUDE.md) | Claude Code용 작업 규칙 |
 | [`HANDOFF.md`](HANDOFF.md) | 세션 인계 문서. 이전 대화의 결정, 작업 규칙, 다음 작업 |
 
